@@ -1,222 +1,258 @@
-from PIL import Image, ImageTk
 import tkinter as tk
-import tkinter as tk
+from tkinter import messagebox
 import random
 
-# main window stuff
+# Setting up the main window for the game to be more understandable
 root = tk.Tk()
 root.title("Survive the Ghost's Quiz")
-root.attributes("-fullscreen", True)   # yeah its fullscreen cuz its cooler
-root.configure(bg="black")
-root.bind("<Escape>", lambda x: root.destroy())  # esc to run away fast
+# I want this to feel immersive, so I madethe window fill the screen
+root.attributes("-fullscreen", True)
+root.config(bg="black")
 
-# all the variables i need to remember
-score = 0
-question_count = 0
-level = ""
-n1 = 0
-n2 = 0
-sign = ""
-tries = 0
+# Letting the player leave the game quickly by pressing Escape
+root.bind("<Escape>", lambda e: root.destroy())
 
-# removes everything when i change screens
-def clear_all():
+# Keeping track of the game state with a few global variables
+difficulty = None      # The difficulty the player chose
+score = 0             
+question_number = 0      
+num1, num2, operation = 0, 0, "+"  
+attempts = 0            # How many tries the current question took
+
+#remove everything on the screen so I can load a new screen quickly
+def clearWindow():
     for widget in root.winfo_children():
-        widget.pack_forget()
-        widget.grid_forget()
-        widget.place_forget()
         widget.destroy()
 
-# little X button up top cuz sometimes esc doesnt work
-def close_btn():
-    btn = tk.Button(root, text="X", font=("Arial", 22, "bold"),
-                    bg="darkred", fg="white", bd=0, relief="flat",
-                    command=root.destroy)
-    btn.place(relx=0.98, rely=0.02, anchor="ne")
-
-# first screen you see
-
-
-def home():
-    global bg_img
-
-    # correct long relative path from your working directory
-    img_path = (r"Assessment 1 - Skills Portfolio\ex1mathsquiz\scarybg.jpg")
-
-    # load JPG using Pillow
-    img = Image.open(img_path)
-    bg_img = ImageTk.PhotoImage(img)
-
-    # display image as background
-    bg_label = tk.Label(root, image=bg_img)
-    bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-
-    # text / buttons on top of background
-    tk.Label(root, text="SURVIVE THE", font=("Chiller", 85, "bold"),
-             fg="red", bg="#00000000").pack(pady=120)
-
-    tk.Label(root, text="GHOST'S QUIZ", font=("Chiller", 85, "bold"),
-             fg="red", bg="#00000000").pack()
+#adding a small close button at the top-right so players can quit easily
+def addCloseButton():
+    close_btn = tk.Button(
+        root,
+        text="X",
+        font=("Courier", 18, "bold"),
+        bg="darkred",
+        fg="white",
+        command=root.destroy,
+        bd=0,
+        highlightthickness=0,
+        cursor="hand2"
+    )
+    close_btn.place(relx=0.98, rely=0.02, anchor="ne")
 
 
+# This is where players pick what they want to do: start, read instructions, or quit
+def homeScreen():
+    clearWindow()
+    addCloseButton()
 
-# instructions screen
-def how_to():
-    clear_all()
-    close_btn()
+    tk.Label(root, text="SURVIVE THE GHOST'S QUIZ", fg="red", bg="black",
+             font=("Chiller", 60, "bold")).pack(pady=80)
 
-    tk.Label(root, text="HOW TO NOT DIE", font=("Chiller", 70),
-             fg="red", bg="black").pack(pady=80)
+    tk.Button(root, text="START GAME", font=("Courier", 24), bg="red", fg="white",
+              width=20, command=difficultyMenu).pack(pady=20)
 
-    # UPDATED INSTRUCTIONS TEXT
-    text = """1. Choose your difficulty: Easy, Medium, or Hard.
-2. You must answer 10 math problems chosen by the ghost.
-3. Only + and - questions... for now.
-4. First try correct = +10 points.
-5. Second try correct = +5 points.
-6. Two wrong tries and the ghost reveals the answer.
-7. You must score AT LEAST 70/100 to survive.
-8. If you fail... the ghost collects your soul.
-"""
+    tk.Button(root, text="INSTRUCTIONS", font=("Courier", 24), bg="#222", fg="white",
+              width=20, command=instructionsPage).pack(pady=20)
 
-    tk.Label(root, text=text, font=("Courier", 22), fg="#cccccc",
-             bg="black", justify="left").pack(pady=50)
+    tk.Button(root, text="EXIT", font=("Courier", 24), bg="darkred", fg="white",
+              width=20, command=root.destroy).pack(pady=20)
 
-    tk.Button(root, text="BACK", font=("Courier", 22), bg="#444", fg="white",
-              command=home).pack(pady=60)
+# Here I explaied the rules in a concise, friendly way
+def instructionsPage():
+    clearWindow()
+    addCloseButton()
 
-# choose difficulty screen
-def pick_level():
-    clear_all()
-    close_btn()
+   
+    tk.Label(root, text="INSTRUCTIONS", fg="red", bg="black",
+             font=("Chiller", 60, "bold")).pack(pady=40)
 
-    tk.Label(root, text="PICK YOUR FATE", font=("Chiller", 65),
-             fg="red", bg="black").pack(pady=100)
+    instructions = (
+        "1. Choose your difficulty (Easy / Moderate / Advanced)\n"
+        "2. You’ll face 10 math problems: + or -\n"
+        "3. First correct try: +10 points\n"
+        "4. Second correct try: +5 points\n"
+        "5. Score 70 or higher to survive...\n"
+        "6. Fail, and the ghost will find you 💀"
+    )
+    tk.Label(root, text=instructions, fg="white", bg="black",
+             font=("Courier", 18), justify="left").pack(pady=20)
 
-    tk.Button(root, text="EASY", font=("Courier", 30), bg="green", fg="black",
-              width=20, height=2, command=lambda: start("easy")).pack(pady=25)
-    tk.Button(root, text="MEDIUM", font=("Courier", 30), bg="orange", fg="black",
-              width=20, height=2, command=lambda: start("medium")).pack(pady=25)
-    tk.Button(root, text="HARD", font=("Courier", 30), bg="red", fg="white",
-              width=20, height=2, command=lambda: start("hard")).pack(pady=25)
+    # A way back to the home screen
+    tk.Button(root, text="BACK", font=("Courier", 18), bg="#333", fg="white",
+              width=15, command=homeScreen).pack(pady=30)
 
-    tk.Button(root, text="back", font=("Courier", 18), bg="#555", fg="white",
-              command=home).pack(pady=70)
 
-# numbers depending on difficulty
-def make_numbers(diff):
-    if diff == "easy":
-        return random.randint(1, 12), random.randint(1, 12)
-    elif diff == "medium":
+# Letting the player pick Easy, Moderate, or Advanced
+def difficultyMenu():
+    clearWindow()
+    addCloseButton()
+
+    tk.Label(root, text="CHOOSE YOUR DIFFICULTY", fg="red", bg="black",
+             font=("Chiller", 60, "bold")).pack(pady=40)
+
+    # The three difficulty options
+    tk.Button(root, text="EASY", font=("Courier", 24), bg="#222", fg="white",
+              width=20, command=lambda: startQuiz("easy")).pack(pady=20)
+    tk.Button(root, text="MODERATE", font=("Courier", 24), bg="#222", fg="white",
+              width=20, command=lambda: startQuiz("moderate")).pack(pady=20)
+    tk.Button(root, text="ADVANCED", font=("Courier", 24), bg="#222", fg="white",
+              width=20, command=lambda: startQuiz("advanced")).pack(pady=20)
+
+    # A back option if they change their mind
+    tk.Button(root, text="BACK", font=("Courier", 18), bg="#333", fg="white",
+              width=15, command=homeScreen).pack(pady=40)
+
+
+# I generated two numbers, their size depends on the chosen difficulty
+def randomInt(level):
+    if level == "easy":
+        return random.randint(1, 9), random.randint(1, 9)
+    elif level == "moderate":
         return random.randint(10, 99), random.randint(10, 99)
     else:
-        return random.randint(100, 999), random.randint(100, 999)
+        # Advanced is the hard mode
+        return random.randint(1000, 9999), random.randint(1000, 9999)
 
-# actually start the quiz
-def start(diff):
-    global level, score, question_count
-    level = diff
+# Deciding whether the current question is addition or subtraction
+def decideOperation():
+    return random.choice(["+", "-"])
+
+#QUIZ
+# This resets the game state and kicks off the first question
+def startQuiz(level):
+    global difficulty, score, question_number
+    difficulty = level
     score = 0
-    question_count = 0
-    next_q()
+    question_number = 0
+    nextQuestion()
 
-# show one question
-def next_q():
-    global n1, n2, sign, tries, question_count
+# Building the next math problem screen
+def nextQuestion():
+    global num1, num2, operation, attempts, question_number
+    clearWindow()
+    addCloseButton()
 
-    clear_all()
-    close_btn()
-
-    if question_count >= 10:
-        game_over()
+    # If we've already asked 10 questions, end the quiz
+    if question_number >= 10:
+        displayResults()
         return
 
-    question_count += 1
-    tries = 0
+    question_number += 1
+    attempts = 0
 
-    n1, n2 = make_numbers(level)
-    sign = random.choice(["+", "-"])
+    # Get a fresh problem
+    num1, num2 = randomInt(difficulty)
+    operation = decideOperation()
 
-    tk.Label(root, text=f"Question {question_count}/10", font=("Courier", 28),
-             fg="red", bg="black").pack(pady=40)
+    # A tiny header to show progress
+    tk.Label(root, text=f"Question {question_number}/10", fg="red",
+             bg="black", font=("Courier", 24)).pack(pady=10)
 
-    tk.Label(root, text=f"{n1} {sign} {n2} =", font=("Courier", 55, "bold"),
-             fg="white", bg="black").pack(pady=100)
+    # The actual math problem the player must solve
+    tk.Label(root, text=f"{num1} {operation} {num2} = ?", fg="white",
+             bg="black", font=("Courier", 40, "bold")).pack(pady=40)
 
-    box = tk.Entry(root, font=("Courier", 35), justify="center", width=10)
-    box.pack(pady=20)
-    box.focus()
+    # Where the player types their answer
+    answer_entry = tk.Entry(root, font=("Courier", 28), justify="center")
+    answer_entry.pack(pady=20)
 
-    msg = tk.Label(root, text="", font=("Courier", 24), fg="yellow", bg="black")
-    msg.pack(pady=20)
+    # A space to give feedback like "Correct!" or "Try again"
+    feedback = tk.Label(root, text="", fg="red", bg="black", font=("Courier", 20))
+    feedback.pack(pady=10)
 
-    def check_answer():
-        nonlocal msg
-        try:
-            ans = int(box.get())
-        except:
-            msg.config(text="type a number dummy", fg="orange")
+    # What happens when the player hits Submit
+    def submit():
+        nonlocal feedback
+        user_answer = answer_entry.get()
+        # Quick check: ensure this is a number (could be negative)
+        if not user_answer.lstrip("-").isdigit():
+            feedback.config(text="Enter a valid number!", fg="orange")
             return
+        isCorrect(int(user_answer), feedback)
 
-        correct = n1 + n2 if sign == "+" else n1 - n2
-        global score, tries
-        tries += 1
+    # Adding the  submit button
+    tk.Button(root, text="SUBMIT", font=("Courier", 22), bg="red", fg="white",
+              width=15, command=submit).pack(pady=20)
 
-        if ans == correct:
-            if tries == 1:
-                score += 10
-                msg.config(text="nice +10", fg="lime")
-            else:
-                score += 5
-                msg.config(text="ok but 2nd try +5", fg="yellow")
-            root.after(1300, next_q)
+    # A back option if they want to rethink the difficulty
+    tk.Button(root, text="BACK", font=("Courier", 18), bg="#333", fg="white",
+              width=10, command=difficultyMenu).pack(pady=10)
+
+
+# Compare the player's answer to the correct one and move forward
+def isCorrect(user_answer, feedback_label):
+    global score, attempts
+    attempts += 1
+
+    correct_answer = num1 + num2 if operation == "+" else num1 - num2
+
+    if user_answer == correct_answer:
+        if attempts == 1:
+            score += 10  # first try bonus
+            feedback_label.config(text="Correct! +10 points", fg="green")
         else:
-            if tries == 1:
-                msg.config(text="wrong lol try again", fg="red")
-            else:
-                msg.config(text=f"nope it was {correct}", fg="red")
-                root.after(1800, next_q)
+            score += 5   # second attempt earns a smaller prize
+            feedback_label.config(text="Correct (2nd try)! +5 points", fg="yellow")
 
-    tk.Button(root, text="ANSWER", font=("Courier", 28), bg="red", fg="white",
-              command=check_answer).pack(pady=20)
-
-    box.bind("<Return>", lambda e: check_answer())
-
-    tk.Button(root, text="i give up", font=("Courier", 16), bg="#333", fg="white",
-              command=pick_level).pack(pady=10)
-
-# end screen
-def game_over():
-    clear_all()
-    close_btn()
-
-    tk.Label(root, text="GAME OVER", font=("Chiller", 90),
-             fg="red", bg="black").pack(pady=80)
-
-    tk.Label(root, text=f"Score: {score}/100", font=("Courier", 40),
-             fg="white", bg="black").pack(pady=30)
-
-    if score >= 70:
-        tk.Label(root, text="you lived... barely", font=("Chiller", 50),
-                 fg="green", bg="black").pack(pady=80)
+        # Waiting a moment, then move to the next question
+        root.after(1000, nextQuestion)
     else:
-        tk.Label(root, text="GHOST GOT YOU", font=("Chiller", 70, "bold"),
-                 fg="red", bg="black").pack(pady=80)
+        if attempts == 1:
+            feedback_label.config(text="Wrong... try again!", fg="red")
+        else:
+            feedback_label.config(text=f"Wrong again! The ghost laughs...\nAnswer was {correct_answer}.", fg="red")
+            root.after(1500, nextQuestion)
 
-        # scary flashing when you die
-        def scary_flash():
-            if root.cget("bg") == "black":
-                root.config(bg="#330000")
-            else:
-                root.config(bg="black")
-            root.after(200, scary_flash)
-        scary_flash()
+# Showing results and a little ghost-themed ending based on score
+def displayResults():
+    clearWindow()
+    addCloseButton()
 
-    tk.Button(root, text="PLAY AGAIN", font=("Courier", 28), bg="#222", fg="white",
-              command=home).pack(pady=50)
-    tk.Button(root, text="QUIT", font=("Courier", 28), bg="darkred", fg="white",
-              command=root.destroy).pack(pady=20)
+    tk.Label(root, text="QUIZ COMPLETE", fg="red", bg="black",
+             font=("Chiller", 60, "bold")).pack(pady=40)
+    
+    tk.Label(root, text=f"Your final score: {score}/100", fg="white", bg="black",
+             font=("Courier", 28)).pack(pady=20)
 
-# start everything
-home()
+    if score >= 90:
+        rank = "A+"
+    elif score >= 80:
+        rank = "A"
+    elif score >= 70:
+        rank = "B"
+    elif score >= 60:
+        rank = "C"
+    else:
+        rank = "F"
+
+    tk.Label(root, text=f"Rank: {rank}", fg="yellow", bg="black",
+             font=("Courier", 24)).pack(pady=10)
+
+    # A little extra flair depending on how well the user did
+    if score >= 70:
+        msg = "You survived… for now."
+        color = "green"
+        tk.Label(root, text=msg, fg=color, bg="black",
+                 font=("Chiller", 40, "bold")).pack(pady=50)
+    else:
+        # If the score was too low, the ghost tracks you down visually
+        msg_label = tk.Label(root, text="THE GHOST FOUND YOU 💀", fg="red",
+                             bg="black", font=("Chiller", 50, "bold"))
+        msg_label.pack(pady=50)
+
+        # Quick flashing effect to amp up the spooky vibe
+        def flash_bg():
+            current = root.cget("bg")
+            root.config(bg="darkred" if current == "black" else "black")
+            root.after(300, flash_bg)
+
+        flash_bg()
+
+    # Options after finishing
+    tk.Button(root, text="PLAY AGAIN", font=("Courier", 20), bg="#222", fg="white",
+              width=15, command=homeScreen).pack(pady=20)
+    tk.Button(root, text="EXIT", font=("Courier", 20), bg="red", fg="white",
+              width=15, command=root.destroy).pack(pady=10)
+
+homeScreen()
 root.mainloop()
