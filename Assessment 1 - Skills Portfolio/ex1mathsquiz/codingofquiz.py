@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
 import random
+from PIL import Image, ImageTk
+import cv2
 
 # Setting up the main window for the game to be more understandable
 root = tk.Tk()
@@ -24,6 +26,68 @@ def clearWindow():
     for widget in root.winfo_children():
         widget.destroy()
 
+        # -------------------- BACKGROUND IMAGE OR VIDEO FUNCTIONS --------------------
+
+# (Optional) still-image background for non-quiz screens
+def setBackground():
+    global bg_label, bg_image
+    image = Image.open(r"Assessment 1 - Skills Portfolio\ex1mathsquiz\scarybg.jpg")   # change file name if needed
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    image = image.resize((screen_width, screen_height))
+    bg_image = ImageTk.PhotoImage(image)
+    bg_label = tk.Label(root, image=bg_image)
+    bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+# Video background for the quiz
+def playVideoBackground(video_path):
+    global video_capture, video_label, update_video
+    video_capture = cv2.VideoCapture(video_path)
+
+    video_label = tk.Label(root)
+    video_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+    def update_frame():
+        ret, frame = video_capture.read()
+        if not ret:
+            video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            ret, frame = video_capture.read()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = cv2.resize(frame, (root.winfo_screenwidth(), root.winfo_screenheight()))
+        img = ImageTk.PhotoImage(Image.fromarray(frame))
+        video_label.img = img
+        video_label.config(image=img)
+        global update_video
+        update_video = root.after(33, update_frame)  # ~30 FPS
+    update_frame()
+
+# Stop the video (for when the quiz ends)
+def stopVideo():
+    global video_capture, update_video
+    try:
+        root.after_cancel(update_video)
+        video_capture.release()
+        video_label.destroy()
+    except:
+        pass
+
+
+
+# Add a spooky background image across all screens
+def setBackground():
+    global bg_label, bg_image
+    # Load and resize image to fit screen
+    image = Image.open(r"Assessment 1 - Skills Portfolio\ex1mathsquiz\scarybg.jpg")   # change name if needed
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    image = image.resize((screen_width, screen_height))
+    bg_image = ImageTk.PhotoImage(image)
+    
+    # Place as background label (behind all widgets)
+    bg_label = tk.Label(root, image=bg_image)
+    bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+
 #adding a small close button at the top-right so players can quit easily
 def addCloseButton():
     close_btn = tk.Button(
@@ -43,6 +107,7 @@ def addCloseButton():
 # This is where players pick what they want to do: start, read instructions, or quit
 def homeScreen():
     clearWindow()
+    setBackground()
     addCloseButton()
 
     tk.Label(root, text="SURVIVE THE GHOST'S QUIZ", fg="red", bg="black",
@@ -60,6 +125,7 @@ def homeScreen():
 # Here I explaied the rules in a concise, friendly way
 def instructionsPage():
     clearWindow()
+    setBackground()
     addCloseButton()
 
    
@@ -85,6 +151,7 @@ def instructionsPage():
 # Letting the player pick Easy, Moderate, or Advanced
 def difficultyMenu():
     clearWindow()
+    setBackground()
     addCloseButton()
 
     tk.Label(root, text="CHOOSE YOUR DIFFICULTY", fg="red", bg="black",
@@ -130,7 +197,9 @@ def startQuiz(level):
 def nextQuestion():
     global num1, num2, operation, attempts, question_number
     clearWindow()
+    playVideoBackground(r"Assessment 1 - Skills Portfolio\ex1mathsquiz\scarybg2.mp4")  # your video filename here
     addCloseButton()
+
 
     # If we've already asked 10 questions, end the quiz
     if question_number >= 10:
@@ -205,8 +274,11 @@ def isCorrect(user_answer, feedback_label):
 
 # Showing results and a little ghost-themed ending based on score
 def displayResults():
+    stopVideo()
     clearWindow()
+    setBackground()   # optional – puts your static background back
     addCloseButton()
+
 
     tk.Label(root, text="QUIZ COMPLETE", fg="red", bg="black",
              font=("Chiller", 60, "bold")).pack(pady=40)

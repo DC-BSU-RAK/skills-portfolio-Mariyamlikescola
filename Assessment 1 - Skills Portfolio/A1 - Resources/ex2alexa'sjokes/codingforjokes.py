@@ -1,0 +1,134 @@
+import tkinter as tk               
+from tkinter import font as tkfont 
+import random                      
+import os                          
+import sys                         
+
+# this function grabs all the jokes from the file
+def load_jokes():
+    jokes = []                     # empty list to store them
+    
+    if getattr(sys, 'frozen', False):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.dirname(__file__)   
+    
+    path = os.path.join(base_path, "randomJokes.txt")   # full path to the file
+    
+    try:
+        with open(path, "r", encoding="utf-8") as file:   # open the jokes file
+            for line in file:                             # go line by line
+                line = line.strip()                        # remove extra spaces
+                if "?" in line and len(line) > 10:         # make sure it's actually a joke
+                    setup, punch = line.split("?", 1)      # split only at first ?
+                    setup = setup.strip() + "?"            # add the ? back to setup
+                    punch = punch.strip()                  # clean the punchline
+                    jokes.append((setup, punch))           # add to list
+    except FileNotFoundError:
+        
+        jokes = [("Why did the chicken cross the road?", "To get to the other side!"),
+                 ("What do you call a fake noodle?", "An impasta!")]
+    
+    return jokes                   # give back the full list
+
+ALL_JOKES = load_jokes()           # load all jokes once when program starts
+
+# main class for the whole app
+class AlexaJokeChaos:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Alexa but she's having a breakdown")   # best title ever
+        self.root.geometry("720x580")                           # size i picked
+        self.root.configure(bg="#ffe4e6")                       # baby pink background
+        self.root.resizable(False, False)                       # not allowing to resize
+
+        # Adding different fonts 
+        self.title_f = tkfont.Font(family="Comic Sans MS", size=28, weight="bold")  
+        self.setup_f = tkfont.Font(family="Georgia", size=18, slant="italic")       
+        self.punch_f = tkfont.Font(family="Consolas", size=20, weight="bold")      
+        self.btn_f   = tkfont.Font(family="Arial Rounded MT Bold", size=13)        
+
+        # huge pink title at the top
+        tk.Label(root, text="ALEXA, TELL ME A JOKE", font=self.title_f,
+                 bg="#ffe4e6", fg="#ff6b9d").pack(pady=(20, 5))
+        # little unhinged message
+        tk.Label(root, text="(she's unhinged today)", font=("Courier", 12),
+                 bg="#ffe4e6", fg="#888").pack(pady=(0, 20))
+
+        # the bright pink joke box
+        joke_box = tk.Frame(root, bg="#ff9ff3", bd=6, relief="ridge")  
+        joke_box.pack(padx=40, pady=20, fill="both", expand=True)
+
+        # where the joke question appears
+        self.setup_lbl = tk.Label(joke_box, text="click the pink button ↓↓↓",
+                                  font=self.setup_f, bg="#ff9ff3", fg="#2f1b41",
+                                  wraplength=600, justify="center", pady=20)
+        self.setup_lbl.pack(expand=True)
+
+        # punchline stays hidden until they click the button
+        self.punch_lbl = tk.Label(joke_box, text="", font=self.punch_f,
+                                  bg="#ff9ff3", fg="#c70039", wraplength=600,
+                                  justify="center")
+        self.punch_lbl.pack(expand=True, pady=(0, 30))
+
+        # container for the big main button
+        btns = tk.Frame(root, bg="#ffe4e6")
+        btns.pack(pady=15)
+
+        # THE BIG PINK BUTTON that everyone smashes first
+        self.main_btn = tk.Button(btns, text="ALEXA, TELL ME A JOKE",
+                                  font=("Arial Rounded MT Bold", 16, "bold"),
+                                  bg="#ff6b9d", fg="white", relief="raised",
+                                  bd=8, padx=25, pady=15,
+                                  activebackground="#ff477e",
+                                  command=self.new_joke)
+        self.main_btn.pack(pady=(10, 20))
+
+        # bottom buttons in a row
+        lower = tk.Frame(root, bg="#ffe4e6")
+        lower.pack(pady=10)
+
+        # button to reveal the punchline
+        self.punch_btn = tk.Button(lower, text="SHOW PUNCHLINE",
+                                   font=self.btn_f, bg="#4ecdc4", fg="white",
+                                   state="disabled", command=self.show_punchline)
+        self.punch_btn.pack(side="left", padx=20)
+
+        # next joke button
+        self.next_btn = tk.Button(lower, text="NEXT JOKE →",
+                                  font=self.btn_f, bg="#95e1d3", fg="white",
+                                  state="disabled", command=self.new_joke)
+        self.next_btn.pack(side="left", padx=20)
+
+        # bye bye button
+        tk.Button(lower, text="BYE FELICIA",
+                  font=self.btn_f, bg="#6c757d", fg="white",
+                  command=root.destroy).pack(side="left", padx=20)
+
+        self.current_joke = None   # keeps track of current joke
+
+    # gets a new random joke and shows only the setup
+    def new_joke(self):
+        self.current_joke = random.choice(ALL_JOKES)   # pick random one
+        setup, punch = self.current_joke
+
+        self.setup_lbl.config(text=setup, fg="#2f1b41")   # show question
+        self.punch_lbl.config(text="")                    # hide any old punchline
+        
+        # let them see punchline, but can't skip yet
+        self.punch_btn.config(state="normal", bg="#4ecdc4")
+        self.next_btn.config(state="disabled", bg="#bdc3c7")
+
+    # finally shows the funny part
+    def show_punchline(self):
+        if self.current_joke:                             
+            punch = self.current_joke[1]
+            self.punch_lbl.config(text=punch, fg="#c70039")
+            # now they can get next joke
+            self.punch_btn.config(state="disabled", bg="#bdc3c7")
+            self.next_btn.config(state="normal", bg="#95e1d3")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = AlexaJokeChaos(root)
+    root.mainloop()
