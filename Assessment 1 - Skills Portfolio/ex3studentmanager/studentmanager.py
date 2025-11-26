@@ -1,60 +1,67 @@
-# Student Marks Manager
-# A simple program I made for my programming assignment
-# It reads student marks from the text file in the Resources folder
-# and lets the teacher/me view results nicely with a pink menu (yes, I like pink)
-
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, simpledialog
 import os
 
-class StudentApp:
+class StudentManager:
     def __init__(self):
-        # setting up the main window
-        self.window = tk.Tk()
-        self.window.title("Student Marks System")
-        self.window.geometry("1100x700")
-        self.window.configure(bg="#f8f8f8")
+        # main window setup
+        self.root = tk.Tk()
+        self.root.title("Student Manager - Pink Edition")
+        self.root.geometry("1300x750")
+        self.root.configure(bg="#fff0f8")
 
-        self.all_students = []          # this will hold all the student info
-        self.load_marks_from_file()     # trying to read the file when program starts
-        self.build_interface()          
+        # my favourite shades of pink
+        self.main_pink = "#ff69b4"
+        self.button_pink = "#ff1493"
+        self.bg_color = "#fff0f8"
 
-    def load_marks_from_file(self):
-        # The file is inside "A1 - Resources" folder, not next to this .py file
-        # So we need to go up one folder then into Resources
+        self.students = []  # this will hold all student dictionaries
+        self.filepath = self.find_the_file()
 
-        script_folder = os.path.dirname(os.path.abspath(__file__))        # where is this py file?
-        resources_folder = os.path.join(script_folder, "..", "A1 - Resources")
-        file_location = os.path.join(resources_folder, "studentMarks.txt")
+        self.load_all_students()
+        self.make_the_gui()
 
-        # just in case there are weird slashes on Windows/Mac
-        file_location = os.path.normpath(file_location)
+    # finds the studentMarks.txt file even if the script is somewhere else
+    def find_the_file(self):
+        current_folder = os.path.dirname(os.path.abspath(__file__))
+        resources = os.path.join(current_folder, "..", "A1 - Resources")
+        full_path = os.path.join(resources, "studentMarks.txt")
+        return os.path.normpath(full_path)
+
+    # reads the file when the program starts
+    def load_all_students(self):
+        if not os.path.exists(self.filepath):
+            messagebox.showerror("File missing", f"Can't find the file!\nI expected it here:\n{self.filepath}")
+            return
 
         try:
-            with open(file_location, "r", encoding="utf-8") as f:
-                lines = f.readlines()
+            with open(self.filepath, "r", encoding="utf-8") as file:
+                all_lines = file.readlines()
 
-            if len(lines) == 0:
-                messagebox.showerror("Oops", "The file is empty!")
+            if len(all_lines) < 1:
                 return
 
-            how_many = int(lines[0].strip())        # first line = number of students
+            how_many = int(all_lines[0].strip())
+            self.students = []
 
-            for i in range(1, how_many + 1):
-                parts = lines[i].strip().split(",")
+            # starting from line 1 because line 0 is just the count
+            for line in all_lines[1:1+how_many]:
+                data = line.strip().split(",")
+                if len(data) != 6:
+                    continue  
 
-                code = int(parts[0])
-                name = parts[1].strip()
-                cw1 = int(parts[2])
-                cw2 = int(parts[3])
-                cw3 = int(parts[4])
-                exam = int(parts[5])
+                code = int(data[0])
+                name = data[1].strip()
+                cw1 = int(data[2])
+                cw2 = int(data[3])
+                cw3 = int(data[4])
+                exam = int(data[5])
 
                 coursework_total = cw1 + cw2 + cw3
-                total_marks = coursework_total + exam
-                percentage = (total_marks / 160) * 100
+                overall = coursework_total + exam
+                percentage = round((overall / 160) * 100, 2)
 
-                # deciding the grade
+                # grade logic – I always forget the order so I wrote it clearly
                 if percentage >= 70:
                     grade = "A"
                 elif percentage >= 60:
@@ -66,87 +73,90 @@ class StudentApp:
                 else:
                     grade = "F"
 
-                # storing everything in a dictionary and adding to the big list
-                student = {
+                student_dict = {
                     "code": code,
                     "name": name,
-                    "coursework": coursework_total,
+                    "cw1": cw1, "cw2": cw2, "cw3": cw3,
                     "exam": exam,
-                    "percentage": round(percentage, 2),
+                    "coursework": coursework_total,
+                    "percentage": percentage,
                     "grade": grade
                 }
-                self.all_students.append(student)
+                self.students.append(student_dict)
 
-        except FileNotFoundError:
-            messagebox.showerror("File missing",
-                f"Can't find studentMarks.txt!\n\n"
-                f"I was looking here:\n{file_location}\n\n"
-                f"Put the file in the 'A1 - Resources' folder.")
         except Exception as e:
-            messagebox.showerror("Something went wrong", f"Error: {e}")
+            messagebox.showerror("Oops", f"Something broke while reading the file:\n{e}")
 
-    def build_interface(self):
-        # Pink sidebar on the left — matches the example picture
-        sidebar = tk.Frame(self.window, bg="#ff69b4", width=300)
+    # writing everything back to the txt file – super important for add/delete/update
+    def save_back_to_file(self):
+        try:
+            with open(self.filepath, "w", encoding="utf-8") as f:
+                f.write(f"{len(self.students)}\n")  # first line = number of students
+                for s in self.students:
+                    f.write(f"{s['code']},{s['name']},{s['cw1']},{s['cw2']},{s['cw3']},{s['exam']}\n")
+            messagebox.showinfo("Saved", "All changes saved to studentMarks.txt")
+        except:
+            messagebox.showerror("Error", "Couldn't save the file. Check permissions?")
+
+    # building the whole interface
+    def make_the_gui(self):
+        # making the treeview look nice
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("Treeview.Heading", background=self.button_pink, foreground="white")
+        style.configure("Treeview", rowheight=35)
+
+        # left pink sidebar
+        sidebar = tk.Frame(self.root, bg=self.main_pink, width=360)
         sidebar.pack(side="left", fill="y")
         sidebar.pack_propagate(False)
 
-        # title at the top
-        tk.Label(sidebar, text="Student Records", font=("Arial", 20, "bold"),
-                 bg="#ff69b4", fg="white", pady=25).pack()
+        tk.Label(sidebar, text="Student Manager", font=("Arial", 22, "bold"),
+                 bg=self.main_pink, fg="white", pady=30).pack()
 
-        # the four menu buttons
+        # all the buttons
         buttons = [
-            ("1. View all student records", self.show_all_students),
-            ("2. View individual student record", self.search_one_student),
-            ("3. Show student with highest total score", self.show_highest_student),
-            ("4. Show student with lowest total score", self.show_lowest_student)
+            ("1. View All Students", self.show_everybody),
+            ("2. Search a Student", self.search_student),
+            ("3. Highest Score", self.show_the_best),
+            ("4. Lowest Score", self.show_the_lowest),
+            ("5. Sort Records", self.sort_them),
+            ("6. Add New Student", self.add_new_kid),
+            ("7. Delete Student", self.remove_kid),
+            ("8. Update Student", self.edit_kid),
         ]
 
-        for button_text, function in buttons:
-            btn = tk.Button(sidebar, text=button_text, font=("Arial", 12),
-                            bg="#ff1493", fg="white", activebackground="#ff69b4",
-                            height=2, bd=0, command=function)
-            btn.pack(fill="x", padx=25, pady=10)
+        for text, command in buttons:
+            btn = tk.Button(sidebar, text=text, font=("Arial", 12, "bold"),
+                            bg=self.button_pink, fg="white", height=2, bd=0,
+                            activebackground="#ff69b4", command=command)
+            btn.pack(fill="x", padx=35, pady=9)
 
-        # Right side — where the table goes
-        right_side = tk.Frame(self.window, bg="#f8f8f8")
-        right_side.pack(fill="both", expand=True, padx=20, pady=20)
+        # right side – where the table lives
+        right_frame = tk.Frame(self.root, bg=self.bg_color)
+        right_frame.pack(fill="both", expand=True, padx=20, pady=20)
 
-        # Table (Treeview) setup
         columns = ("Code", "Name", "Coursework", "Exam", "Overall %", "Grade")
-        self.table = ttk.Treeview(right_side, columns=columns, show="headings", height=20)
+        self.table = ttk.Treeview(right_frame, columns=columns, show="headings")
 
-        # adding column headings and widths
-        self.table.heading("Code", text="Code")
-        self.table.heading("Name", text="Student Name")
-        self.table.heading("Coursework", text="Coursework (/60)")
-        self.table.heading("Exam", text="Exam (/100)")
-        self.table.heading("Overall %", text="Overall %")
-        self.table.heading("Grade", text="Grade")
-
-        self.table.column("Code", width=100, anchor="center")
-        self.table.column("Name", width=250, anchor="w")
-        self.table.column("Coursework", width=140, anchor="center")
-        self.table.column("Exam", width=140, anchor="center")
-        self.table.column("Overall %", width=120, anchor="center")
-        self.table.column("Grade", width=100, anchor="center")
-
+        for col in columns:
+            self.table.heading(col, text=col)
+            self.table.column(col, width=150, anchor="center")
+        self.table.column("Name", width=300, anchor="w")
         self.table.pack(fill="both", expand=True)
 
-        # labelling at the bottom for averages and messages
-        self.info_label = tk.Label(right_side, text="", font=("Arial", 12, "italic"),
-                                   bg="#f8f8f8", fg="#333")
-        self.info_label.pack(pady=15)
+        # little status message at the bottom
+        self.status_label = tk.Label(right_frame, text="Ready – pick something from the menu",
+                                     font=("Arial", 12, "italic"), bg=self.bg_color, fg="#666")
+        self.status_label.pack(pady=12)
 
-    def clear_table(self):
-        # removing everything currently shown
+    # clears whatever is currently in the table
+    def empty_table(self):
         for row in self.table.get_children():
             self.table.delete(row)
-        self.info_label.config(text="")
 
-    def add_student_row(self, student):
-        # putting one student into the table
+    # puts one student into the table
+    def put_student_in_table(self, student):
         self.table.insert("", "end", values=(
             student["code"],
             student["name"],
@@ -156,73 +166,195 @@ class StudentApp:
             student["grade"]
         ))
 
+    # MENU 1 – show everyone
+    def show_everybody(self):
+        self.empty_table()
+        for kid in self.students:
+            self.put_student_in_table(kid)
 
-    def show_all_students(self):
-        self.clear_table()
-        for s in self.all_students:
-            self.add_student_row(s)
+        if self.students:
+            average = sum(s["percentage"] for s in self.students) / len(self.students)
+            self.status_label.config(text=f"{len(self.students)} students | Class average: {average:.2f}%")
 
-        # calculating average for the whole class
-        if self.all_students:
-            avg = sum(s["percentage"] for s in self.all_students) / len(self.all_students)
-            self.info_label.config(text=f"Total students: {len(self.all_students)}   |   Class average: {avg:.2f}%")
-
-    def search_one_student(self):
-        if not self.all_students:
-            messagebox.showinfo("Empty", "No students loaded yet.")
+    # MENU 2 – search
+    def search_student(self):
+        search = simpledialog.askstring("Search", "Type part of name or student code:")
+        if not search:
             return
 
-        # little pop-up window to type name or code
-        popup = tk.Toplevel(self.window)
-        popup.title("Search Student")
-        popup.geometry("380x220")
-        popup.configure(bg="#ffffff")
+        search = search.lower()
+        matches = []
+        for s in self.students:
+            if search in str(s["code"]) or search in s["name"].lower():
+                matches.append(s)
 
-        tk.Label(popup, text="Enter student code or name:", font=("Arial", 12), bg="#ffffff").pack(pady=25)
+        self.empty_table()
+        if matches:
+            for m in matches:
+                self.put_student_in_table(m)
+            self.status_label.config(text=f"Found {len(matches)} student(s)")
+        else:
+            self.status_label.config(text="Nobody found")
+            messagebox.showinfo("Not found", "No student matches that search")
 
-        search_box = tk.Entry(popup, font=("Arial", 12), width=30)
-        search_box.pack(pady=10)
-
-        def do_search():
-            text = search_box.get().strip().lower()
-            found = None
-            for s in self.all_students:
-                if str(s["code"]) == text or text in s["name"].lower():
-                    found = s
-                    break
-
-            if found:
-                self.clear_table()
-                self.add_student_row(found)
-                self.info_label.config(text=f"Found → {found['name']} ({found['code']})")
-                popup.destroy()
-            else:
-                messagebox.showinfo("Not found", "No student matches that name/code.")
-
-        tk.Button(popup, text="Search", command=do_search,
-                  bg="#ff69b4", fg="white", font=("Arial", 11)).pack(pady=20)
-
-    def show_highest_student(self):
-        if not self.all_students:
+    # MENU 3 & 4 – best and worst
+    def show_the_best(self):
+        if not self.students:
             return
-        top = max(self.all_students, key=lambda x: x["percentage"])
-        self.clear_table()
-        self.add_student_row(top)
-        self.info_label.config(text=f"HIGHEST → {top['name']} with {top['percentage']}% (Grade {top['grade']})")
+        best = max(self.students, key=lambda x: x["percentage"])
+        self.empty_table()
+        self.put_student_in_table(best)
+        self.status_label.config(text=f"Best student: {best['name']} – {best['percentage']}%")
 
-    def show_lowest_student(self):
-        if not self.all_students:
+    def show_the_lowest(self):
+        if not self.students:
             return
-        bottom = min(self.all_students, key=lambda x: x["percentage"])
-        self.clear_table()
-        self.add_student_row(bottom)
-        self.info_label.config(text=f"LOWEST → {bottom['name']} with {bottom['percentage']}% (Grade {bottom['grade']})")
+        worst = min(self.students, key=lambda x: x["percentage"])
+        self.empty_table()
+        self.put_student_in_table(worst)
+        self.status_label.config(text=f"Lowest: {worst['name']} – {worst['percentage']}%")
 
+    # MENU 5 – sort
+    def sort_them(self):
+        if not self.students:
+            messagebox.showinfo("Empty", "Nothing to sort!")
+            return
+
+        what = simpledialog.askstring("Sort", "Sort by: name / code / percentage / grade\nAdd ' desc' for descending")
+        if not what:
+            return
+
+        descending = "desc" in what.lower()
+        field = what.lower().replace(" desc", "").strip()
+
+        if field == "name":
+            self.students.sort(key=lambda x: x["name"].lower(), reverse=descending)
+        elif field == "code":
+            self.students.sort(key=lambda x: x["code"], reverse=descending)
+        elif field == "percentage":
+            self.students.sort(key=lambda x: x["percentage"], reverse=descending)
+        elif field == "grade":
+            order = {"A":0, "B":1, "C":2, "D":3, "F":4}
+            self.students.sort(key=lambda x: order[x["grade"]], reverse=descending)
+        else:
+            messagebox.showerror("Nope", "I only know name, code, percentage, grade")
+            return
+
+        self.show_everybody()
+        direction = "descending" if descending else "ascending"
+        self.status_label.config(text=f"Sorted by {field} ({direction})")
+
+    # MENU 6 – add student
+    def add_new_kid(self):
+        code = simpledialog.askinteger("Code", "Student code (1000-9999):", minvalue=1000, maxvalue=9999)
+        if not code:
+            return
+        if any(s["code"] == code for s in self.students):
+            messagebox.showerror("Duplicate", "That code already exists!")
+            return
+
+        name = simpledialog.askstring("Name", "Full name:")
+        if not name:
+            return
+
+        # getting the marks one by one
+        cw1 = simpledialog.askinteger("CW1", "Coursework 1 (out of 20):", minvalue=0, maxvalue=20)
+        cw2 = simpledialog.askinteger("CW2", "Coursework 2 (out of 20):", minvalue=0, maxvalue=20)
+        cw3 = simpledialog.askinteger("CW3", "Coursework 3 (out of 20):", minvalue=0, maxvalue=20)
+        exam = simpledialog.askinteger("Exam", "Exam mark (out of 100):", minvalue=0, maxvalue=100)
+        if None in (cw1,cw2,cw3,exam):
+            return
+
+        coursework = cw1 + cw2 + cw3
+        total = coursework + exam
+        perc = round((total/160)*100, 2)
+        grade = "A" if perc>=70 else "B" if perc>=60 else "C" if perc>=50 else "D" if perc>=40 else "F"
+
+        new_kid = {
+            "code": code, "name": name.strip(),
+            "cw1": cw1, "cw2": cw2, "cw3": cw3,
+            "exam": exam, "coursework": coursework,
+            "percentage": perc, "grade": grade
+        }
+
+        self.students.append(new_kid)
+        self.save_back_to_file()
+        self.show_everybody()
+        messagebox.showinfo("Yes!", f"{name} has been added!")
+
+    # MENU 7 – delete
+    def remove_kid(self):
+        who = simpledialog.askstring("Delete", "Name or code of student to delete:")
+        if not who:
+            return
+
+        found = None
+        for s in self.students:
+            if who.lower() in str(s["code"]) or who.lower() in s["name"].lower():
+                found = s
+                break
+
+        if not found:
+            messagebox.showinfo("Not found", "Couldn't find that student")
+            return
+
+        if messagebox.askyesno("Sure?", f"Really delete {found['name']} ({found['code']})?"):
+            self.students.remove(found)
+            self.save_back_to_file()
+            self.show_everybody()
+            messagebox.showinfo("Gone", "Student deleted")
+
+    # MENU 8 – update
+    def edit_kid(self):
+        who = simpledialog.askstring("Update", "Name or code of student to edit:")
+        if not who:
+            return
+
+        student = None
+        for s in self.students:
+            if who.lower() in str(s["code"]) or who.lower() in s["name"].lower():
+                student = s
+                break
+
+        if not student:
+            messagebox.showinfo("Not found", "No student with that name/code")
+            return
+
+        # little submenu in a messagebox because it's easier
+        options = "What do you want to change?\n\n1. Name\n2. Coursework 1\n3. Coursework 2\n4. Coursework 3\n5. Exam mark"
+        choice = simpledialog.askinteger("Choose", options, minvalue=1, maxvalue=5)
+        if not choice:
+            return
+
+        if choice == 1:
+            new = simpledialog.askstring("New name", "Enter new name:")
+            if new:
+                student["name"] = new.strip()
+        elif choice <= 4:
+            new = simpledialog.askinteger("New mark", f"New mark for Coursework {choice-1} (0-20):", minvalue=0, maxvalue=20)
+            if new is not None:
+                student[f"cw{choice-1}"] = new
+        else:
+            new = simpledialog.askinteger("New exam", "New exam mark (0-100):", minvalue=0, maxvalue=100)
+            if new is not None:
+                student["exam"] = new
+
+        # recalculating everything
+        student["coursework"] = student["cw1"] + student["cw2"] + student["cw3"]
+        total = student["coursework"] + student["exam"]
+        student["percentage"] = round((total/160)*100, 2)
+        student["grade"] = "A" if student["percentage"]>=70 else "B" if student["percentage"]>=60 else "C" if student["percentage"]>=50 else "D" if student["percentage"]>=40 else "F"
+
+        self.save_back_to_file()
+        self.show_everybody()
+        messagebox.showinfo("Updated", "Record updated successfully!")
+
+    # starting the app
     def run(self):
-        self.window.mainloop()
+        self.root.mainloop()
 
 
-# Starting the program
+# code to actually run the thing
 if __name__ == "__main__":
-    my_app = StudentApp()
-    my_app.run()
+    app = StudentManager()
+    app.run()
