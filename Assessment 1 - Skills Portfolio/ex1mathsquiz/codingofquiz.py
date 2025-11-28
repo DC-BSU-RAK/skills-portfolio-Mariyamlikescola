@@ -3,7 +3,7 @@ import random
 from PIL import Image, ImageTk
 import cv2
 
-# Survive the Ghost's Quiz(I made the math quiz look like a horror game)
+# Survive the Ghost's Quiz (I made the math quiz look like a horror game)
 
 root = tk.Tk()
 root.title("Survive the Ghost's Quiz")
@@ -38,10 +38,10 @@ def put_scary_picture():
         img = img.resize((root.winfo_screenwidth(), root.winfo_screenheight()))
         photo = ImageTk.PhotoImage(img)
         bg = tk.Label(root, image=photo)
-        bg.image = photo  # important or image disappears
+        bg.image = photo  
         bg.place(x=0, y=0)
     except:
-        root.config(bg="black")  # fallback if image not found
+        root.config(bg="black") 
 
 
 def play_spooky_video():
@@ -111,18 +111,17 @@ def main_menu():
 
     tk.Button(root, text="START GAME", font=("Courier",32), bg="red", fg="white",
               width=20, height=2, command=choose_diff).pack(pady=30)
-    tk.Button(root, text="INSTRUCTIONS", font=("Courier",28), bg="#222", fg="white",
+    tk.Button(root, text="INSTRUCTIONS", font=("Courier",28), bg="black", fg="white",
               width=20, height=2, command=instructions).pack(pady=15)
     tk.Button(root, text="EXIT", font=("Courier",28), bg="darkred", fg="white",
               width=20, height=2, command=root.destroy).pack(pady=15)
-
 
 def instructions():
     delete_everything()
     put_scary_picture()
     little_x_button()
 
-    tk.Label(root, text="HOW TO SURVIVE", font=("Chiller",80,"bold"), fg="red").pack(pady=80)
+    tk.Label(root, text="HOW TO SURVIVE", font=("Chiller", 80, "bold"), fg="red").pack(pady=80)
 
     rules = """• Choose your difficulty
 • Answer 10 math questions
@@ -131,8 +130,23 @@ def instructions():
 • Need 70+ points to survive
 • Fail and... well, good luck"""
 
-    tk.Label(root, text=rules, font=("Courier",24), fg="#cccccc", justify="left").pack(pady=60)
-    tk.Button(root, text="BACK", font=("Courier",24), bg="#444", fg="white", command=main_menu).pack(pady=80)
+    tk.Label(root, text=rules, font=("Courier", 26), fg="#cccccc", bg="#000000", 
+             justify="left", padx=100).pack(pady=80)
+
+    # BACK ARROW BUTTON (cool and scary)
+    back_btn = tk.Button(root, text="← BACK", font=("Courier", 32, "bold"),
+                         bg="#330000", fg="#ff3333", activebackground="#660000",
+                         activeforeground="white", bd=0, relief="flat",
+                         command=main_menu, cursor="hand2")
+    back_btn.place(relx=0.07, rely=0.9, anchor="w")  # bottom-left corner
+
+     #makes it pulse a little for extra horror vibes
+    def pulse():
+        current_bg = back_btn.cget("bg")
+        new_bg = "#550000" if current_bg == "#330000" else "#330000"
+        back_btn.config(bg=new_bg)
+        root.after(800, pulse)
+    root.after(800, pulse)
 
 
 def choose_diff():
@@ -253,36 +267,46 @@ def check_answer(user_answer, feedback_label):
             root.after(2000, next_question)
 
 
-# ending the screen
+
+# ending the screen 
 def end_screen():
-    stop_spooky_video()
-    delete_everything()
-    put_scary_picture()
+    stop_spooky_video()          # stop video
+    delete_everything()           #clear screen
+
+    root.configure(bg="black")    # start with black
     little_x_button()
 
-    tk.Label(root, text="QUIZ COMPLETE", font=("Chiller",80,"bold"), fg="red").pack(pady=70)
-    tk.Label(root, text=f"Score: {my_score}/100", font=("Courier",50), fg="white").pack(pady=40)
+    little_x_button()
+
+    tk.Label(root, text="QUIZ COMPLETE", font=("Chiller",80,"bold"), fg="red", bg="black").pack(pady=70)
+    tk.Label(root, text=f"Score: {my_score}/100", font=("Courier",50), fg="white", bg="black").pack(pady=40)
 
     if my_score >= 90:
         msg, col = "LEGENDARY SURVIVOR", "#00ff00"
     elif my_score >= 70:
         msg, col = "You survived...", "yellow"
     else:
-        msg, col = "THE GHOST FOUND YOU", "red"
+        msg, col = "THE GHOST FOUND YOU", "#ff0000"
 
-    tk.Label(root, text=msg, font=("Chiller",60,"bold"), fg=col).pack(pady=60)
+    tk.Label(root, text=msg, font=("Chiller",60,"bold"), fg=col, bg="black").pack(pady=60)
 
+    # RED FLASHING when u lose the game!
     if my_score < 70:
         def flash_red():
-            root.config(bg="red" if root.cget("bg") == "black" else "black")
-            root.after(300, flash_red)
+            current = root.cget("bg")
+            root.configure(bg="#ff0000" if current == "black" else "black")
+            # also make text flash white for extra scare
+            for widget in root.winfo_children():
+                if isinstance(widget, tk.Label):
+                    widget.configure(fg="white" if current == "black" else col)
+            root.after(200, flash_red)  # faster = scarier
+
         root.after(500, flash_red)
 
-    tk.Button(root, text="PLAY AGAIN", font=("Courier",28), bg="#222", fg="white",
-              command=main_menu).pack(pady=40)
+    tk.Button(root, text="PLAY AGAIN", font=("Courier",28), bg="#333", fg="white",
+              activebackground="#555", command=main_menu).pack(pady=40)
     tk.Button(root, text="EXIT", font=("Courier",28), bg="darkred", fg="white",
               command=root.destroy).pack(pady=10)
-
 
 # starting the game
 main_menu()
