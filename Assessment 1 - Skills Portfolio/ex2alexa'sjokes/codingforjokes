@@ -101,7 +101,7 @@ class AlexaJokeChaos:
         self.next_btn.pack(side="left", padx=20)
 
         # bye bye button
-        tk.Button(lower, text="BYE FELICIA",
+        tk.Button(lower, text="EXIT",
                   font=self.btn_f, bg="#6c757d", fg="white",
                   command=root.destroy).pack(side="left", padx=20)
 
