@@ -4,7 +4,7 @@ import os
 
 class StudentManager:
     def __init__(self):
-        # Main application window setup
+        # Main application for the window setup
         self.root = tk.Tk()
         self.root.title("Student Manager")
         self.root.geometry("1350x780")
